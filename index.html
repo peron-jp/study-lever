@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>勉強レバー</title>
+<style>
+:root{
+  --felt:#0b3d2e; --felt-dark:#082a20; --brass:#c9a227; --brass-light:#e6c65c;
+  --cream:#f1e9d8; --panel:#122a20; --red:#8a2323; --line:rgba(230,198,92,.25);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*{box-sizing:border-box;}
+body{
+  margin:0; min-height:100svh; background:
+    radial-gradient(circle at 50% 0%, var(--felt) 0%, var(--felt-dark) 70%);
+  color:var(--cream); font-family:'Georgia',serif;
+  display:flex; flex-direction:column; align-items:center; padding:28px 16px 40px;
+}
+h1{
+  font-family:'Georgia',serif; font-weight:700; letter-spacing:.02em;
+  font-size:clamp(22px,5vw,30px); margin:4px 0 2px; color:var(--brass-light);
+}
+.sub{color:var(--cream); opacity:.65; font-size:14px; margin:0 0 22px; text-align:center; max-width:340px;}
+
+.cabinet{
+  background:linear-gradient(180deg,#173a2c,#0e2b21);
+  border:3px solid var(--brass); border-radius:18px;
+  padding:22px 20px 26px; width:100%; max-width:380px;
+  box-shadow:0 12px 30px rgba(0,0,0,.4), inset 0 0 40px rgba(0,0,0,.35);
+  position:relative;
+}
+.status{
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:13px; color:var(--brass-light); margin-bottom:14px; padding:0 2px;
+}
+.status b{font-size:20px; color:var(--cream); display:block; font-family:Georgia,serif;}
+
+.reel-row{
+  display:flex; justify-content:center; gap:8px; background:#08150f;
+  border:2px solid var(--line); border-radius:10px; padding:18px 10px;
+  margin-bottom:16px;
+}
+.reel{
+  width:70px; height:78px; background:linear-gradient(180deg,#fdf6e3,#eaddb8);
+  border-radius:6px; display:flex; align-items:center; justify-content:center;
+  font-size:30px; font-weight:700; color:#1a1a1a; box-shadow:inset 0 0 6px rgba(0,0,0,.4);
+  overflow:hidden;
+}
+.reel span{display:block;}
+@media (prefers-reduced-motion: no-preference){
+  .reel.spinning span{animation:spin .09s linear infinite;}
+}
+@keyframes spin{ from{transform:translateY(0);} to{transform:translateY(-6px);} }
+
+.result{
+  text-align:center; min-height:44px; font-size:16px; color:var(--brass-light);
+  margin-bottom:16px; line-height:1.5;
+}
+.result b{font-size:22px; color:#fff;}
+
+.controls{display:flex; align-items:center; justify-content:center; gap:22px; margin-bottom:10px;}
+
+.study-btn{
+  flex:1; max-width:190px; padding:14px 10px; border-radius:10px; border:2px solid var(--brass);
+  background:var(--panel); color:var(--brass-light); font-size:14.5px; font-weight:700;
+  cursor:pointer; font-family:Georgia,serif;
+}
+.study-btn:active{transform:translateY(1px);}
+
+.lever-wrap{width:56px; display:flex; flex-direction:column; align-items:center; user-select:none;}
+.lever-track{width:14px; height:90px; background:#08150f; border-radius:8px; position:relative; border:1px solid var(--line);}
+.lever-knob{
+  width:36px; height:36px; border-radius:50%; position:absolute; left:50%; transform:translateX(-50%);
+  top:0; background:radial-gradient(circle at 35% 30%, #ff5b5b, var(--red)); border:2px solid #fff2;
+  box-shadow:0 3px 6px rgba(0,0,0,.5); cursor:pointer; transition:top .18s ease;
+}
+.lever-knob.down{top:54px;}
+.lever-knob.disabled{filter:grayscale(1) brightness(.6); cursor:not-allowed;}
+.lever-label{font-size:11px; color:var(--cream); opacity:.6; margin-top:6px; text-align:center;}
+
+.log{
+  width:100%; max-width:380px; margin-top:20px; background:rgba(0,0,0,.2);
+  border:1px solid var(--line); border-radius:10px; padding:10px 14px; max-height:150px; overflow-y:auto;
+}
+.log h2{font-size:12px; color:var(--brass-light); margin:0 0 6px; font-weight:700; opacity:.8;}
+.log-item{font-size:13px; padding:4px 0; border-bottom:1px solid rgba(255,255,255,.06); display:flex; justify-content:space-between; color:var(--cream); opacity:.85;}
+.log-empty{font-size:13px; opacity:.5; padding:6px 0;}
+
+.reset{margin-top:14px; background:none; border:none; color:var(--cream); opacity:.4; font-size:12px; cursor:pointer; text-decoration:underline;}
+
+@media (prefers-color-scheme: light){
+  body{color:var(--cream);}
+}
+</style>
+
+<meta name="theme-color" content="#0b3d2e">
+<meta name="description" content="勉強したらレバーを引いて、YouTubeのごほうび時間を獲得する勉強支援アプリ。">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<h1>勉強レバー</h1>
+<p class="sub">勉強を終えたら記録して、レバーを引く。出た分だけYouTubeを見ていい。</p>
+
+<div class="cabinet">
+  <div class="status">
+    <div>引ける回数<b id="pullsLeft">0</b></div>
+    <div style="text-align:right">合計獲得<b id="totalMin">0分</b></div>
+  </div>
+
+  <div class="reel-row">
+    <div class="reel" id="reel"><span>--</span></div>
+  </div>
+
+  <div class="result" id="result">勉強を記録すると、レバーが1回引けるようになります。</div>
+
+  <div class="controls">
+    <button class="study-btn" id="studyBtn">勉強1コマ終了</button>
+    <div class="lever-wrap">
+      <div class="lever-track">
+        <div class="lever-knob disabled" id="knob"></div>
+      </div>
+      <div class="lever-label">引く</div>
+    </div>
+  </div>
+</div>
+
+<div class="log">
+  <h2>記録</h2>
+  <div id="logList"><div class="log-empty">まだ記録がありません</div></div>
+</div>
+
+<button class="reset" id="resetBtn">記録をすべて消す</button>
+
+<script>
+const KEY = 'study-lever-state-v1';
+const REWARDS = [10,10,15,15,20,20,25,25,30,40]; // 40分は当たり枠
+let state = {pulls:0, total:0, history:[]};
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) state = JSON.parse(raw);
+  }catch(e){}
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+}
+function render(){
+  document.getElementById('pullsLeft').textContent = state.pulls;
+  document.getElementById('totalMin').textContent = state.total + '分';
+  const knob = document.getElementById('knob');
+  knob.classList.toggle('disabled', state.pulls<=0);
+  const list = document.getElementById('logList');
+  if(state.history.length===0){
+    list.innerHTML = '<div class="log-empty">まだ記録がありません</div>';
+  } else {
+    list.innerHTML = state.history.slice(-12).reverse().map(h=>
+      `<div class="log-item"><span>${h.type==='study'?'勉強を記録':'YouTube '+h.min+'分'}</span><span>${h.time}</span></div>`
+    ).join('');
+  }
+}
+function nowStr(){
+  const d = new Date();
+  return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+}
+
+document.getElementById('studyBtn').addEventListener('click', ()=>{
+  state.pulls += 1;
+  state.history.push({type:'study', time:nowStr()});
+  save(); render();
+  document.getElementById('result').textContent = 'よくやった。レバーを引いていい。';
+});
+
+let actx = null;
+function ac(){
+  if(!actx){
+    try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+  }
+  if(actx.state==='suspended') actx.resume();
+  return actx;
+}
+function tone(freq, dur, type, gainVal, delay){
+  const c = ac(); if(!c) return;
+  const t0 = c.currentTime + (delay||0);
+  const osc = c.createOscillator();
+  const g = c.createGain();
+  osc.type = type||'square';
+  osc.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(gainVal||0.15, t0+0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+  osc.connect(g); g.connect(c.destination);
+  osc.start(t0); osc.stop(t0+dur+0.02);
+}
+function pullSound(){
+  // ガチャッ:低音の機械音 → クリック
+  tone(180,0.09,'square',0.18,0);
+  tone(90,0.12,'sawtooth',0.14,0.05);
+}
+function tickSound(){
+  // デレデレデレ:短いブリップ
+  tone(520+Math.random()*120,0.045,'square',0.06,0);
+}
+function winSound(big){
+  // 決まった時のチャイム
+  const notes = big ? [523,659,784,1047] : [523,659,784];
+  notes.forEach((f,i)=> tone(f, 0.16, 'triangle', 0.14, i*0.09));
+}
+
+let spinning = false;
+document.getElementById('knob').addEventListener('click', function(){
+  if(spinning || state.pulls<=0) return;
+  spinning = true;
+  state.pulls -= 1;
+  save();
+  const knob = this;
+  const reel = document.getElementById('reel');
+  const span = reel.querySelector('span');
+  knob.classList.add('down');
+  reel.classList.add('spinning');
+  pullSound();
+  document.getElementById('result').textContent = '……';
+  let ticks = 0;
+  const spin = setInterval(()=>{
+    span.textContent = REWARDS[Math.floor(Math.random()*REWARDS.length)];
+    tickSound();
+    ticks++;
+    if(ticks>14){
+      clearInterval(spin);
+      const reward = REWARDS[Math.floor(Math.random()*REWARDS.length)];
+      span.textContent = reward;
+      reel.classList.remove('spinning');
+      knob.classList.remove('down');
+      state.total += reward;
+      state.history.push({type:'reward', min:reward, time:nowStr()});
+      save(); render();
+      const big = reward>=30;
+      winSound(big);
+      document.getElementById('result').innerHTML = (big?'🎉 大当たり。':'') + 'YouTube <b>'+reward+'分</b> 視聴可。';
+      spinning = false;
+    }
+  }, 90);
+});
+
+let resetArmed = false;
+let resetTimer = null;
+const resetBtn = document.getElementById('resetBtn');
+resetBtn.addEventListener('click', ()=>{
+  if(!resetArmed){
+    resetArmed = true;
+    resetBtn.textContent = 'もう一度押すと全消去します';
+    resetTimer = setTimeout(()=>{
+      resetArmed = false;
+      resetBtn.textContent = '記録をすべて消す';
+    }, 3000);
+    return;
+  }
+  clearTimeout(resetTimer);
+  resetArmed = false;
+  resetBtn.textContent = '記録をすべて消す';
+  state = {pulls:0, total:0, history:[]};
+  save(); render();
+  document.getElementById('result').textContent = '勉強を記録すると、レバーが1回引けるようになります。';
+});
+
+load(); render();
+</script>
+
+<script>
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
